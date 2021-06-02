@@ -22,6 +22,7 @@ import com.github.thibaultbee.streampack.internal.endpoints.FakeEndpoint
 import com.github.thibaultbee.streampack.streamers.BaseCaptureStreamer
 import com.github.thibaultbee.streampack.utils.AndroidUtils
 import com.github.thibaultbee.streampack.utils.FakeAndroidLogger
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Before
@@ -51,15 +52,17 @@ class BaseCaptureStreamerTest {
     @Test
     fun defaultUsageTest() {
         try {
-            captureStreamer.configure(
-                AndroidUtils.fakeValidAudioConfig(),
-                AndroidUtils.fakeValidVideoConfig()
-            )
-            captureStreamer.startPreview(surface)
-            captureStreamer.startStream()
-            captureStreamer.stopStream()
-            captureStreamer.stopPreview()
-            captureStreamer.release()
+            runBlocking {
+                captureStreamer.configure(
+                    AndroidUtils.fakeValidAudioConfig(),
+                    AndroidUtils.fakeValidVideoConfig()
+                )
+                captureStreamer.startPreview(surface)
+                captureStreamer.startStream()
+                captureStreamer.stopStream()
+                captureStreamer.stopPreview()
+                captureStreamer.release()
+            }
         } catch (e: Exception) {
             fail("Default usage must not throw exception ${e.message}")
         }
@@ -68,8 +71,10 @@ class BaseCaptureStreamerTest {
     @Test
     fun startPreviewOnlyTest() {
         try {
-            captureStreamer.startPreview(surface)
-            fail("startPreview without configure must failed")
+            runBlocking {
+                captureStreamer.startPreview(surface)
+                fail("startPreview without configure must failed")
+            }
         } catch (e: Exception) {
         }
     }
@@ -77,18 +82,22 @@ class BaseCaptureStreamerTest {
     @Test
     fun startStreamOnlyTest() {
         try {
-            captureStreamer.startStream()
-            fail("startStream without configure nor startPreview must failed")
+            runBlocking {
+                captureStreamer.startStream()
+                fail("startStream without configure nor startPreview must failed")
+            }
         } catch (e: Exception) {
         }
 
         try {
-            captureStreamer.configure(
-                AndroidUtils.fakeValidAudioConfig(),
-                AndroidUtils.fakeValidVideoConfig()
-            )
-            captureStreamer.startStream()
-            fail("startStream without startPreview must failed")
+            runBlocking {
+                captureStreamer.configure(
+                    AndroidUtils.fakeValidAudioConfig(),
+                    AndroidUtils.fakeValidVideoConfig()
+                )
+                captureStreamer.startStream()
+                fail("startStream without startPreview must failed")
+            }
         } catch (e: Exception) {
         }
     }
@@ -123,11 +132,13 @@ class BaseCaptureStreamerTest {
     @Test
     fun configureReleaseTest() {
         try {
-            captureStreamer.configure(
-                AndroidUtils.fakeValidAudioConfig(),
-                AndroidUtils.fakeValidVideoConfig()
-            )
-            captureStreamer.release()
+            runBlocking {
+                captureStreamer.configure(
+                    AndroidUtils.fakeValidAudioConfig(),
+                    AndroidUtils.fakeValidVideoConfig()
+                )
+                captureStreamer.release()
+            }
         } catch (e: Exception) {
             fail("Must be possible to configure/release but catches exception: ${e.message}")
         }
@@ -136,11 +147,13 @@ class BaseCaptureStreamerTest {
     @Test
     fun configureStopPreviewTest() {
         try {
-            captureStreamer.configure(
-                AndroidUtils.fakeValidAudioConfig(),
-                AndroidUtils.fakeValidVideoConfig()
-            )
-            captureStreamer.stopPreview()
+            runBlocking {
+                captureStreamer.configure(
+                    AndroidUtils.fakeValidAudioConfig(),
+                    AndroidUtils.fakeValidVideoConfig()
+                )
+                captureStreamer.stopPreview()
+            }
         } catch (e: Exception) {
             fail("Must be possible to configure/stopPreview but catches exception: ${e.message}")
         }
@@ -149,11 +162,13 @@ class BaseCaptureStreamerTest {
     @Test
     fun configureStopStreamTest() {
         try {
-            captureStreamer.configure(
-                AndroidUtils.fakeValidAudioConfig(),
-                AndroidUtils.fakeValidVideoConfig()
-            )
-            captureStreamer.stopStream()
+            runBlocking {
+                captureStreamer.configure(
+                    AndroidUtils.fakeValidAudioConfig(),
+                    AndroidUtils.fakeValidVideoConfig()
+                )
+                captureStreamer.stopStream()
+            }
         } catch (e: Exception) {
             fail("Must be possible to configure/stopStream but catches exception: ${e.message}")
         }
@@ -162,11 +177,13 @@ class BaseCaptureStreamerTest {
     @Test
     fun onConfigurationErrorTest() {
         try {
-            captureStreamer.configure(
-                AndroidUtils.fakeInvalidAudioConfig(),
-                AndroidUtils.fakeValidVideoConfig()
-            )
-            fail("Invalid configuration must throw an exception")
+            runBlocking {
+                captureStreamer.configure(
+                    AndroidUtils.fakeInvalidAudioConfig(),
+                    AndroidUtils.fakeValidVideoConfig()
+                )
+                fail("Invalid configuration must throw an exception")
+            }
         } catch (e: Exception) {
         }
     }
@@ -174,12 +191,14 @@ class BaseCaptureStreamerTest {
     @Test
     fun startPreviewReleaseTest() {
         try {
-            captureStreamer.configure(
-                AndroidUtils.fakeValidAudioConfig(),
-                AndroidUtils.fakeValidVideoConfig()
-            )
-            captureStreamer.startPreview(surface)
-            captureStreamer.release()
+            runBlocking {
+                captureStreamer.configure(
+                    AndroidUtils.fakeValidAudioConfig(),
+                    AndroidUtils.fakeValidVideoConfig()
+                )
+                captureStreamer.startPreview(surface)
+                captureStreamer.release()
+            }
         } catch (e: Exception) {
             fail("Must be possible to startPreview/release but catches exception: ${e.message}")
         }
@@ -189,12 +208,14 @@ class BaseCaptureStreamerTest {
     @Test
     fun startPreviewStopPreviewTest() {
         try {
-            captureStreamer.configure(
-                AndroidUtils.fakeValidAudioConfig(),
-                AndroidUtils.fakeValidVideoConfig()
-            )
-            captureStreamer.startPreview(surface)
-            captureStreamer.stopPreview()
+            runBlocking {
+                captureStreamer.configure(
+                    AndroidUtils.fakeValidAudioConfig(),
+                    AndroidUtils.fakeValidVideoConfig()
+                )
+                captureStreamer.startPreview(surface)
+                captureStreamer.stopPreview()
+            }
         } catch (e: Exception) {
             fail("Must be possible to startPreview/stopPreview but catches exception: ${e.message}")
         }
@@ -203,12 +224,14 @@ class BaseCaptureStreamerTest {
     @Test
     fun startPreviewStopStreamTest() {
         try {
-            captureStreamer.configure(
-                AndroidUtils.fakeValidAudioConfig(),
-                AndroidUtils.fakeValidVideoConfig()
-            )
-            captureStreamer.startPreview(surface)
-            captureStreamer.stopStream()
+            runBlocking {
+                captureStreamer.configure(
+                    AndroidUtils.fakeValidAudioConfig(),
+                    AndroidUtils.fakeValidVideoConfig()
+                )
+                captureStreamer.startPreview(surface)
+                captureStreamer.stopStream()
+            }
         } catch (e: Exception) {
             fail("Must be possible to startPreview/stopStream but catches exception: ${e.message}")
         }
@@ -218,13 +241,15 @@ class BaseCaptureStreamerTest {
     @Test
     fun startStreamReleaseTest() {
         try {
-            captureStreamer.configure(
-                AndroidUtils.fakeValidAudioConfig(),
-                AndroidUtils.fakeValidVideoConfig()
-            )
-            captureStreamer.startPreview(surface)
-            captureStreamer.startStream()
-            captureStreamer.release()
+            runBlocking {
+                captureStreamer.configure(
+                    AndroidUtils.fakeValidAudioConfig(),
+                    AndroidUtils.fakeValidVideoConfig()
+                )
+                captureStreamer.startPreview(surface)
+                captureStreamer.startStream()
+                captureStreamer.release()
+            }
         } catch (e: Exception) {
             fail("Must be possible to startStream/release but catches exception: ${e.message}")
         }
@@ -234,13 +259,15 @@ class BaseCaptureStreamerTest {
     @Test
     fun startStreamStopPreviewTest() {
         try {
-            captureStreamer.configure(
-                AndroidUtils.fakeValidAudioConfig(),
-                AndroidUtils.fakeValidVideoConfig()
-            )
-            captureStreamer.startPreview(surface)
-            captureStreamer.startStream()
-            captureStreamer.stopPreview()
+            runBlocking {
+                captureStreamer.configure(
+                    AndroidUtils.fakeValidAudioConfig(),
+                    AndroidUtils.fakeValidVideoConfig()
+                )
+                captureStreamer.startPreview(surface)
+                captureStreamer.startStream()
+                captureStreamer.stopPreview()
+            }
         } catch (e: Exception) {
             fail("Must be possible to startStream/stopPreview but catches exception: ${e.message}")
         }
@@ -249,13 +276,15 @@ class BaseCaptureStreamerTest {
     @Test
     fun startStreamStopStreamTest() {
         try {
-            captureStreamer.configure(
-                AndroidUtils.fakeValidAudioConfig(),
-                AndroidUtils.fakeValidVideoConfig()
-            )
-            captureStreamer.startPreview(surface)
-            captureStreamer.startStream()
-            captureStreamer.stopStream()
+            runBlocking {
+                captureStreamer.configure(
+                    AndroidUtils.fakeValidAudioConfig(),
+                    AndroidUtils.fakeValidVideoConfig()
+                )
+                captureStreamer.startPreview(surface)
+                captureStreamer.startStream()
+                captureStreamer.stopStream()
+            }
         } catch (e: Exception) {
             fail("Must be possible to startStream/stopStream but catches exception: ${e.message}")
         }

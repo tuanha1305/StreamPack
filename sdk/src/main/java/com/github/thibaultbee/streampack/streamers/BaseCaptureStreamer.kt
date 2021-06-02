@@ -39,7 +39,10 @@ import com.github.thibaultbee.streampack.internal.sources.CameraCapture
 import com.github.thibaultbee.streampack.listeners.OnErrorListener
 import com.github.thibaultbee.streampack.utils.ILogger
 import com.github.thibaultbee.streampack.utils.getCameraList
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.supervisorScope
 import java.nio.ByteBuffer
 
 /**
@@ -213,21 +216,27 @@ open class BaseCaptureStreamer(
      * @see [release]
      */
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
-    fun configure(audioConfig: AudioConfig, videoConfig: VideoConfig) {
+    suspend fun configure(audioConfig: AudioConfig, videoConfig: VideoConfig) {
         // Keep settings when we need to reconfigure
         this.videoConfig = videoConfig
         this.audioConfig = audioConfig
 
-        try {
-            audioSource.configure(audioConfig)
-            audioEncoder.configure(audioConfig)
-            videoSource.configure(videoConfig.fps)
-            videoEncoder.configure(videoConfig)
-
-            endpoint.configure(videoConfig.startBitrate + audioConfig.startBitrate)
-        } catch (e: Exception) {
-            release()
-            throw StreamPackError(e)
+        supervisorScope {
+            try {
+                val deferreds = listOf(async { audioSource.configure(audioConfig) },
+                    async {
+                        audioEncoder.configure(audioConfig)
+                    }, async {
+                        audioEncoder.configure(audioConfig)
+                    }, async { videoSource.configure(videoConfig.fps) },
+                    async { videoEncoder.configure(videoConfig) },
+                    async { endpoint.configure(videoConfig.startBitrate + audioConfig.startBitrate) }
+                )
+                deferreds.awaitAll()
+            } catch (e: Exception) {
+                release()
+                throw StreamPackError(e)
+            }
         }
     }
 
@@ -244,17 +253,21 @@ open class BaseCaptureStreamer(
      * @see [stopPreview]
      */
     @RequiresPermission(allOf = [Manifest.permission.RECORD_AUDIO, Manifest.permission.CAMERA])
-    fun startPreview(previewSurface: Surface, cameraId: String = "0") {
+    suspend fun startPreview(previewSurface: Surface, cameraId: String = "0") {
         require(audioConfig != null) { "Audio has not been configured!" }
         require(videoConfig != null) { "Video has not been configured!" }
 
-        runBlocking {
+        supervisorScope {
             try {
-                videoSource.previewSurface = previewSurface
-                videoSource.encoderSurface = videoEncoder.inputSurface
-                videoSource.startPreview(cameraId)
+                val deferreds = listOf(async {
+                    videoSource.previewSurface = previewSurface
+                    videoSource.encoderSurface = videoEncoder.inputSurface
+                    videoSource.startPreview(cameraId)
+                }, async {
+                    audioSource.startStream()
+                })
 
-                audioSource.startStream()
+                deferreds.awaitAll()
             } catch (e: Exception) {
                 stopPreview()
                 throw StreamPackError(e)
@@ -282,30 +295,35 @@ open class BaseCaptureStreamer(
      *
      * @see [stopStream]
      */
-    open fun startStream() {
+    open suspend fun startStream() {
         require(audioConfig != null) { "Audio has not been configured!" }
         require(videoConfig != null) { "Video has not been configured!" }
         require(videoEncoder.mimeType != null) { "Missing video encoder mime type! Encoder not configured?" }
         require(audioEncoder.mimeType != null) { "Missing audio encoder mime type! Encoder not configured?" }
 
-        try {
-            endpoint.startStream()
+        supervisorScope {
+            try {
+                val deferreds = listOf(
+                    async { endpoint.startStream() },
+                    async {
+                        val streams = mutableListOf<String>()
+                        videoEncoder.mimeType?.let { streams.add(it) }
+                        audioEncoder.mimeType?.let { streams.add(it) }
 
-            val streams = mutableListOf<String>()
-            videoEncoder.mimeType?.let { streams.add(it) }
-            audioEncoder.mimeType?.let { streams.add(it) }
+                        tsMux.addService(tsServiceInfo)
+                        tsMux.addStreams(tsServiceInfo, streams)
+                        videoEncoder.mimeType?.let { videoTsStreamId = tsMux.getStreams(it)[0].pid }
+                        audioEncoder.mimeType?.let { audioTsStreamId = tsMux.getStreams(it)[0].pid }
+                    },
+                    async { audioEncoder.startStream() },
+                    async { videoSource.startStream() },
+                    async { videoEncoder.startStream() })
 
-            tsMux.addService(tsServiceInfo)
-            tsMux.addStreams(tsServiceInfo, streams)
-            videoEncoder.mimeType?.let { videoTsStreamId = tsMux.getStreams(it)[0].pid }
-            audioEncoder.mimeType?.let { audioTsStreamId = tsMux.getStreams(it)[0].pid }
-
-            audioEncoder.startStream()
-            videoSource.startStream()
-            videoEncoder.startStream()
-        } catch (e: Exception) {
-            stopStream()
-            throw StreamPackError(e)
+                deferreds.awaitAll()
+            } catch (e: Exception) {
+                stopStream()
+                throw StreamPackError(e)
+            }
         }
     }
 
@@ -370,7 +388,7 @@ open class BaseCaptureStreamer(
      * @see [stopStream]
      */
     @RequiresPermission(Manifest.permission.CAMERA)
-    private fun resetVideo() {
+    private suspend fun resetVideo() {
         if (videoConfig == null) {
             logger.w(this, "Video has not been configured!")
             return

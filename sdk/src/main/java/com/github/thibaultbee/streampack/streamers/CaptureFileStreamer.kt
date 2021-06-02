@@ -61,5 +61,5 @@ class CaptureFileStreamer(
      * Manifest.permission.WRITE_EXTERNAL_STORAGE.
      */
     @RequiresPermission(allOf = [Manifest.permission.WRITE_EXTERNAL_STORAGE])
-    override fun startStream() = super.startStream()
+    override suspend fun startStream() = super.startStream()
 }
